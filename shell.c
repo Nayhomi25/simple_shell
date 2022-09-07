@@ -4,136 +4,175 @@
 #include <stdlib.h>
 
 /**
- * sig_handler - Prints a new prompt upon a signal.
- * @sig: The signal.
+ * sigintHandler - blocks ctrl-C
+ * @sig_num: the signal number
+ *
+ * Return: void
  */
-void sig_handler(int sig)
+void sigintHandler(__attribute__((unused))int sig_num)
 {
-	char *new_prompt = "\n$ ";
-
-	(void)sig;
-	signal(SIGINT, sig_handler);
-	write(STDIN_FILENO, new_prompt, 3);
+	_puts("\n");
+	_puts("($) ");
+	_putchar(BUF_FLUSH);
 }
 
 
 /**
- * execute - Executes a command in a child process.
- * @args: An array of arguments.
- * @front: A double pointer to the beginning of args.
+ * hsh - main shell loop
+ * @info: the parameter & return info struct
+ * @av: the argument vector from main()
  *
- * Return: If an error occurs - a corresponding error code.
- *         O/w - The exit value of the last executed command.
+ * Return: 0 on success, 1 on error, or error code
  */
-int execute(char **args, char **front)
+int hsh(info_t *info, char **av)
 {
-	pid_t child_pid;
-	int status, flag = 0, ret = 0;
-	char *command = args[0];
+	ssize_t r = 0;
+	int builtin_ret = 0;
 
-	if (command[0] != '/' && command[0] != '.')
+	while (r != -1 && builtin_ret != -2)
 	{
-		flag = 1;
-		command = get_location(command);
+		clear_info(info);
+		if (interactive(info))
+			_puts("$ ");
+		_eputchar(BUF_FLUSH);
+		r = get_input(info);
+		if (r != -1)
+		{
+			set_info(info, av);
+			builtin_ret = find_builtin(info);
+			if (builtin_ret == -1)
+				find_cmd(info);
+		}
+		else if (interactive(info))
+			_putchar('\n');
+		free_info(info, 0);
 	}
-
-	if (!command || (access(command, F_OK) == -1))
+	write_history(info);
+	free_info(info, 1);
+	if (!interactive(info) && info->status)
+		exit(info->status);
+	if (builtin_ret == -2)
 	{
-		if (errno == EACCES)
-			ret = (create_error(args, 126));
-		else
-			ret = (create_error(args, 127));
+		if (info->err_num == -1)
+			exit(info->status);
+		exit(info->err_num);
+	}
+	return (builtin_ret);
+}
+
+/**
+ * find_builtin - finds a builtin command
+ * @info: the parameter & return info struct
+ *
+ * Return: -1 if builtin not found,
+ *			0 if builtin executed successfully,
+ *			1 if builtin found but not successful,
+ *			-2 if builtin signals exit()
+ */
+int find_builtin(info_t *info)
+{
+	int i, built_in_ret = -1;
+	builtin_table builtintbl[] = {
+		{"exit", _nosh_exit},
+		{"env", _nosh_env},
+		{"help", _nosh_help},
+		{"history", _nosh_history},
+		{"setenv", _nosh_setenv},
+		{"unsetenv", _nosh_unsetenv},
+		{"cd", _nosh_cd},
+		{"alias", _nosh_alias},
+		{NULL, NULL}
+	};
+
+	for (i = 0; builtintbl[i].type; i++)
+		if (_strcmp(info->argv[0], builtintbl[i].type) == 0)
+		{
+			info->line_count++;
+			built_in_ret = builtintbl[i].func(info);
+			break;
+		}
+	return (built_in_ret);
+}
+
+/**
+ * find_cmd - finds a command in PATH
+ * @info: the parameter & return info struct
+ *
+ * Return: void
+ */
+
+void find_cmd(info_t *info)
+{
+	char *path = NULL;
+	int i, k;
+
+	info->path = info->argv[0];
+	if (info->linecount_flag == 1)
+	{
+		info->line_count++;
+		info->linecount_flag = 0;
+	}
+	for (i = 0, k = 0; info->arg[i]; i++)
+		if (!is_delim(info->arg[i], " \t\n"))
+			k++;
+	if (!k)
+		return;
+
+	path = find_path(info, _getenv(info, "PATH="), info->argv[0]);
+	if (path)
+	{
+		info->path = path;
+		fork_cmd(info);
 	}
 	else
 	{
-		child_pid = fork();
-		if (child_pid == -1)
+		if ((interactive(info) || _getenv(info, "PATH=")
+			|| info->argv[0][0] == '/') && is_cmd(info, info->argv[0]))
+			fork_cmd(info);
+		else if (*(info->arg) != '\n')
 		{
-			if (flag)
-				free(command);
-			perror("Error child:");
-			return (1);
-		}
-		if (child_pid == 0)
-		{
-			execve(command, args, environ);
-			if (errno == EACCES)
-				ret = (create_error(args, 126));
-			free_env();
-			free_args(args, front);
-			free_alias_list(aliases);
-			_exit(ret);
-		}
-		else
-		{
-			wait(&status);
-			ret = WEXITSTATUS(status);
+			info->status = 127;
+			print_error(info, "not found\n");
 		}
 	}
-	if (flag)
-		free(command);
-	return (ret);
 }
 
-
 /**
- * main - Runs a simple UNIX command interpreter.
- * @argc: The number of arguments supplied to the program.
- * @argv: An array of pointers to the arguments.
+ * fork_cmd - forks a an exec thread to run cmd
+ * @info: the parameter & return info struct
  *
- * Return: The return value of the last executed command.
+ * Return: void
  */
-int main(int argc, char *argv[])
+void fork_cmd(info_t *info)
 {
-	int ret = 0;
-	int retn;
-	int *exe_ret = &retn;
-	char *prompt = "$ ", *new_line = "\n";
+	pid_t child_pid;
 
-	name = argv[0];
-	hist = 1;
-	aliases = NULL;
-
-	shell_init();
-
-	signal(SIGINT, sig_handler);
-	*exe_ret = 0;
-	environ = _copyenv();
-	if (!environ)
-		exit(-100);
-
-	if (argc != 1)
+	child_pid = fork();
+	if (child_pid == -1)
 	{
-		ret = proc_file_commands(argv[1], exe_ret);
-		free_env();
-		free_alias_list(aliases);
-		return (*exe_ret);
+		/* TODO: PUT ERROR FUNCTION */
+		perror("Error:");
+		return;
 	}
-
-	if (!isatty(STDIN_FILENO))
+	if (child_pid == 0)
 	{
-		while (ret != END_OF_FILE && ret != EXIT)
-			ret = handle_args(exe_ret);
-		free_env();
-		free_alias_list(aliases);
-		return (*exe_ret);
-	}
-
-	while (1)
-	{
-		write(STDOUT_FILENO, prompt, 2);
-		ret = handle_args(exe_ret);
-		if (ret == END_OF_FILE || ret == EXIT)
+		if (execve(info->path, info->argv, get_environ(info)) == -1)
 		{
-			if (ret == END_OF_FILE)
-				write(STDOUT_FILENO, new_line, 1);
-			free_env();
-			free_alias_list(aliases);
-			exit(*exe_ret);
+			free_info(info, 1);
+			if (errno == EACCES)
+				exit(126);
+			exit(1);
+		}
+		/* TODO: PUT ERROR FUNCTION */
+	}
+	else
+	{
+		wait(&(info->status));
+		if (WIFEXITED(info->status))
+		{
+			info->status = WEXITSTATUS(info->status);
+			if (info->status == 126)
+				print_error(info, "Permission denied\n");
 		}
 	}
-
-	free_env();
-	free_alias_list(aliases);
-	return (*exe_ret);
 }

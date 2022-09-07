@@ -1,101 +1,121 @@
 #include "main.h"
 
 /**
- * _strchr - Locates a character in a string.
- * @s: The string to be searched.
- * @c: The character to be located.
+ * _strcpy - copies a string
+ * @dest: the destination
+ * @src: the source
  *
- * Return: If c is found - a pointer to the first occurence.
- *         If c is not found - NULL.
+ * Return: pointer to destination
  */
-char *_strchr(char *s, char c)
+char *_strcpy(char *dest, char *src)
 {
-	int index;
+	int i = 0;
 
-	for (index = 0; s[index]; index++)
+	if (dest == src || src == 0)
+		return (dest);
+	while (src[i])
 	{
-		if (s[index] == c)
-			return (s + index);
+		dest[i] = src[i];
+		i++;
 	}
-
-	return (NULL);
+	dest[i] = 0;
+	return (dest);
 }
 
 /**
- * _strspn - Gets the length of a prefix substring.
- * @s: The string to be searched.
- * @accept: The prefix to be measured.
+ * _strdup - duplicates a string
+ * @str: the string to duplicate
  *
- * Return: The number of bytes in s which
- *         consist only of bytes from accept.
+ * Return: pointer to the duplicated string
  */
-int _strspn(char *s, char *accept)
+char *_strdup(const char *str)
 {
-	int bytes = 0;
-	int index;
+	int length = 0;
+	char *ret;
 
-	while (*s)
+	if (str == NULL)
+		return (NULL);
+	while (*str++)
+		length++;
+	ret = malloc(sizeof(char) * (length + 1));
+	if (!ret)
+		return (NULL);
+	for (length++; length--;)
+		ret[length] = *--str;
+	return (ret);
+}
+
+/**
+ *_puts - prints an input string
+ *@str: the string to be printed
+ *
+ * Return: Nothing
+ */
+void _puts(char *str)
+{
+	int i = 0;
+
+	if (!str)
+		return;
+	while (str[i] != '\0')
 	{
-		for (index = 0; accept[index]; index++)
+		_putchar(str[i]);
+		i++;
+	}
+}
+
+/**
+ * _putchar - writes the character c to stdout
+ * @c: The character to print
+ *
+ * Return: On success 1.
+ * On error, -1 is returned, and errno is set appropriately.
+ */
+int _putchar(char c)
+{
+	static int i;
+	static char buf[WRITE_BUF_SIZE];
+
+	if (c == BUF_FLUSH || i >= WRITE_BUF_SIZE)
+	{
+		write(1, buf, i);
+		i = 0;
+	}
+	if (c != BUF_FLUSH)
+		buf[i++] = c;
+	return (1);
+}
+
+/**
+ *_atoi - converts a string to an integer
+ *@s: the string to be converted
+ *Return: 0 if no numbers in string, converted number otherwise
+ */
+
+int _atoi(char *s)
+{
+	int i, sign = 1, flag = 0, output;
+	unsigned int result = 0;
+
+	for (i = 0;  s[i] != '\0' && flag != 2; i++)
+	{
+		if (s[i] == '-')
+			sign *= -1;
+
+		if (s[i] >= '0' && s[i] <= '9')
 		{
-			if (*s == accept[index])
-			{
-				bytes++;
-				break;
-			}
+			flag = 1;
+			result *= 10;
+			result += (s[i] - '0');
 		}
-		s++;
-	}
-	return (bytes);
-}
-
-/**
- * _strcmp - Compares two strings.
- * @s1: The first string to be compared.
- * @s2: The second string to be compared.
- *
- * Return: Positive byte difference if s1 > s2
- *         0 if s1 = s2
- *         Negative byte difference if s1 < s2
- */
-int _strcmp(char *s1, char *s2)
-{
-	while (*s1 && *s2 && *s1 == *s2)
-	{
-		s1++;
-		s2++;
+		else if (flag == 1)
+			flag = 2;
 	}
 
-	if (*s1 != *s2)
-		return (*s1 - *s2);
-
-	return (0);
-}
-
-
-/**
- * _strncmp - Compare two strings.
- * @s1: Pointer to a string.
- * @s2: Pointer to a string.
- * @n: The first n bytes of the strings to compare.
- *
- * Return: Less than 0 if s1 is shorter than s2.
- *         0 if s1 and s2 match.
- *         Greater than 0 if s1 is longer than s2.
- */
-int _strncmp(const char *s1, const char *s2, size_t n)
-{
-	size_t i;
-
-	for (i = 0; s1[i] && s2[i] && i < n; i++)
-	{
-		if (s1[i] > s2[i])
-			return (s1[i] - s2[i]);
-		else if (s1[i] < s2[i])
-			return (s1[i] - s2[i]);
-	}
-	if (i == n)
-		return (0);
+	if (sign == -1)
+		output = -result;
 	else
-		return (-15);
+		output = result;
+
+	return (output);
 }

@@ -1,179 +1,101 @@
 #include "main.h"
 
 /**
- * num_len - Counts the digit length of a number.
- * @num: The number to measure.
+ *_eputs - prints an input string
+ * @str: the string to be printed
  *
- * Return: The digit length.
+ * Return: Nothing
  */
-int num_len(int num)
+void _eputs(char *str)
 {
-	unsigned int num1;
-	int len = 1;
+	int i = 0;
 
-	if (num < 0)
+	if (!str)
+		return;
+	while (str[i] != '\0')
 	{
-		len++;
-		num1 = num * -1;
+		_eputchar(str[i]);
+		i++;
 	}
-	else
-	{
-		num1 = num;
-	}
-	while (num1 > 9)
-	{
-		len++;
-		num1 /= 10;
-	}
-
-	return (len);
 }
 
+/**
+ * _eputchar - writes the character c to stderr
+ * @c: The character to print
+ *
+ * Return: On success 1.
+ * On error, -1 is returned, and errno is set appropriately.
+ */
+int _eputchar(char c)
+{
+	static int i;
+	static char buf[WRITE_BUF_SIZE];
+
+	if (c == BUF_FLUSH || i >= WRITE_BUF_SIZE)
+	{
+		write(2, buf, i);
+		i = 0;
+	}
+	if (c != BUF_FLUSH)
+		buf[i++] = c;
+	return (1);
+}
 
 /**
- * _itoa - Converts an integer to a string.
- * @num: The integer.
+ * _putfd - writes the character c to given fd
+ * @c: The character to print
+ * @fd: The filedescriptor to write to
  *
- * Return: The converted string.
+ * Return: On success 1.
+ * On error, -1 is returned, and errno is set appropriately.
  */
-char *_itoa(int num)
+int _putfd(char c, int fd)
 {
-	char *buffer;
-	int len = num_len(num);
-	unsigned int num1;
+	static int i;
+	static char buf[WRITE_BUF_SIZE];
 
-	buffer = malloc(sizeof(char) * (len + 1));
-	if (!buffer)
-		return (NULL);
-
-	buffer[len] = '\0';
-
-	if (num < 0)
+	if (c == BUF_FLUSH || i >= WRITE_BUF_SIZE)
 	{
-		num1 = num * -1;
-		buffer[0] = '-';
+		write(fd, buf, i);
+		i = 0;
 	}
-	else
-	{
-		num1 = num;
-	}
+	if (c != BUF_FLUSH)
+		buf[i++] = c;
+	return (1);
+}
 
-	len--;
+/**
+ *_putsfd - prints an input string
+ * @str: the string to be printed
+ * @fd: the filedescriptor to write to
+ *
+ * Return: the number of chars put
+ */
+int _putsfd(char *str, int fd)
+{
+	int i = 0;
+
+	if (!str)
+		return (0);
+	while (*str)
+	{
+		i += _putfd(*str++, fd);
+	}
+	return (i);
+}
+
+/**
+ **_strchr - locates a character in a string
+ *@s: the string to be parsed
+ *@c: the character to look for
+ *Return: (s) a pointer to the memory area s
+ */
+char *_strchr(char *s, char c)
+{
 	do {
-		buffer[len] = (num1 % 10) + '0';
-		num1 /= 10;
-		len--;
-	} while (num1 > 0);
+		if (*s == c)
+			return (s);
+	} while (*s++ != '\0');
 
-	return (buffer);
-}
-
-/**
- * create_error - Writes a custom error message to stderr.
- * @args: An array of arguments.
- * @err: The error value.
- *
- * Return: The error value.
- */
-int create_error(char **args, int err)
-{
-	char *error;
-
-	switch (err)
-	{
-	case -1:
-		error = error_env(args);
-		break;
-	case 1:
-		error = error_1(args);
-		break;
-	case 2:
-		if (*(args[0]) == 'e')
-			error = error_2_exit(++args);
-		else if (args[0][0] == ';' || args[0][0] == '&' || args[0][0] == '|')
-			error = error_2_syntax(args);
-		else
-			error = error_2_cd(args);
-		break;
-	case 126:
-		error = error_126(args);
-		break;
-	case 127:
-		error = error_127(args);
-		break;
-	}
-	write(STDERR_FILENO, error, _strlen(error));
-
-	if (error)
-		free(error);
-	return (err);
-
-}
-
-/**
- * error_126 - Creates an error message for permission denied failures.
- * @args: An array of arguments passed to the command.
- *
- * Return: The error string.
- */
-char *error_126(char **args)
-{
-	char *error, *hist_str;
-	int len;
-
-	hist_str = _itoa(hist);
-	if (!hist_str)
-		return (NULL);
-
-	len = _strlen(name) + _strlen(hist_str) + _strlen(args[0]) + 24;
-	error = malloc(sizeof(char) * (len + 1));
-	if (!error)
-	{
-		free(hist_str);
-		return (NULL);
-	}
-
-	_strcpy(error, name);
-	_strcat(error, ": ");
-	_strcat(error, hist_str);
-	_strcat(error, ": ");
-	_strcat(error, args[0]);
-	_strcat(error, ": Permission denied\n");
-
-	free(hist_str);
-	return (error);
-}
-
-/**
- * error_127 - Creates an error message for command not found failures.
- * @args: An array of arguments passed to the command.
- *
- * Return: The error string.
- */
-char *error_127(char **args)
-{
-	char *error, *hist_str;
-	int len;
-
-	hist_str = _itoa(hist);
-	if (!hist_str)
-		return (NULL);
-
-	len = _strlen(name) + _strlen(hist_str) + _strlen(args[0]) + 16;
-	error = malloc(sizeof(char) * (len + 1));
-	if (!error)
-	{
-		free(hist_str);
-		return (NULL);
-	}
-
-	_strcpy(error, name);
-	_strcat(error, ": ");
-	_strcat(error, hist_str);
-	_strcat(error, ": ");
-	_strcat(error, args[0]);
-	_strcat(error, ": not found\n");
-
-	free(hist_str);
-	return (error);
+	return (NULL);
 }

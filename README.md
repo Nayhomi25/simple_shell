@@ -12,7 +12,7 @@
 * [Project Information](#Project-Information)
 	* Tasks
 * [Documentation](#Documentation)
-	* Instalation
+	* Installation
 	* Running
 	* Files
 
@@ -96,7 +96,7 @@ A **shell** is a command-line interpreter. It is  computer program that exposes 
 
 ## Documentation
 
-### Installling
+### Installing
 Perform the following tasks in order to run this program
 
 - Clone This Repo: `` https://github.com/Nayhomi25/simple_shell.git ``
@@ -107,8 +107,8 @@ Perform the following tasks in order to run this program
 ### Running
 To run this program, first compile it, then execute it with the following command:
 `$ ./hsh`
-The prompt below would be displayed, indicating commands can be entered.  
-`$ `   
+The prompt below would be displayed, indicating commands can be entered.
+`$ `
 
 Example:
 ```
