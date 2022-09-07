@@ -87,7 +87,7 @@ int _nosh_cd(info_t *info)
  */
 int _nosh_help(info_t *info)
 {
-	
+
 	char **arg_array;
 
 	arg_array = info->argv;
