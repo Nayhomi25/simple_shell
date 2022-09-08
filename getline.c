@@ -1,21 +1,6 @@
 #include "main.h"
 
 /**
- * shell_init - shell welcome message
- */
-
-/**
-*void shell_init(void)
-*{
-	printf("\n\n\n\n******************************************");
-	printf("\n\n\n\t****NAOMI and OBIEZE'S SHELL****");
-	printf("\n\n\t****-WELCOME TO NOSH-****");
-	printf("\n\n\n\n************USE AT OWN RISK************\n");
-}*/
-
-
-
-/**
  * input_buf - buffers chained commands
  * @info: parameter struct
  * @buf: address of buffer

@@ -186,7 +186,6 @@ int _nosh_alias(info_t *);
 ssize_t get_input(info_t *);
 int _getline(info_t *, char **, size_t *);
 void sigintHandler(int);
-void shell_init(void);
 void clear_info(info_t *);
 void set_info(info_t *, char **);
 void free_info(info_t *, int);
